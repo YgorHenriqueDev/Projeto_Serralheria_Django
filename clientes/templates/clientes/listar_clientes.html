@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Listagem de Clientes - Serralheria Ferraço</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'clientes/css/style.css' %}">
+</head>
+<body>
+    
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">Serralheria Ferraço</a>
+            <div class="d-flex">
+                <span class="navbar-text me-3">Bem vindo, <strong>{{ request.user.first_name }}</strong></span>
+                <a href="{% url 'clientes:logout' %}" class="btn btn-danger">Sair</a>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Container principal -->
+    <div class="container mt-5">
+        <h2 class="text-center mb-4">Lista de Clientes</h2>
+        
+        <!-- Mensagens de erro ou sucesso -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                    {{ message|safe }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <!-- Barra de pesquisa -->
+        <form method="GET" class="mb-4 d-flex">
+            <input type="text" name="q" class="form-control me-2" placeholder="Buscar cliente..." value="{{ request.GET.q }}">
+            <button type="submit" class="btn btn-primary">Buscar</button>
+        </form>
+        
+        <!-- Tabela de clientes -->
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Nome</th>
+                        <th>CPF/CNPJ</th>
+                        <th>Endereço</th>
+                        <th>Telefone</th>
+                        <th>Celular</th>
+                        <th>Email</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cliente in clientes %}
+                    <tr>
+                        <td>{{ cliente.nome }}</td>
+                        <td>{{ cliente.cpf_cnpj }}</td>
+                        <td>{{ cliente.endereco }}</td>
+                        <td>{% if cliente.telefone %}{{ cliente.telefone }}{% else %}Não informado{% endif %}</td>
+                        <td>{% if cliente.celular %}{{ cliente.celular }}{% else %}Não informado{% endif %}</td>
+                        <td>{{ cliente.email }}</td>
+                        <td>
+                            <a href="{% url 'clientes:visualizar_cliente' cliente.id %}" class="btn btn-sm btn-info">👁️ Visualizar</a>
+                            <a href="{% url 'clientes:editar_cliente' cliente.id %}" class="btn btn-warning">✏️ Editar</a>
+                            <button onclick="confirmarExclusao({{ cliente.id }})" class="btn btn-danger">🗑️ Excluir</button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center">Nenhum cliente encontrado.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Botão de cadastrar novo cliente -->
+        <div class="text-center">
+            <a href="{% url 'clientes:adicionar_cliente' %}" class="btn btn-success add-client-btn">Cadastrar Novo Cliente</a>
+        </div>
+    </div>
+    
+    <!-- Modal de Confirmação -->
+<div class="modal fade" id="modalConfirmacao" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalLabel">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Tem certeza que deseja excluir este cliente?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="excluirForm" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Excluir</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        function confirmarExclusao(clienteId) {
+            if (!clienteId) {
+                alert("Erro: ID do cliente inválido.");
+                return;
+            }
+        
+            // Obtém o formulário
+            let form = document.getElementById("excluirForm");
+        
+            // Define a action do formulário com a URL correta
+            form.action = `/excluir_cliente/${clienteId}/`;
+        
+            // Exibe o modal de confirmação
+            let modal = new bootstrap.Modal(document.getElementById("modalConfirmacao"));
+            modal.show();
+        }        
+        
+    </script>
+</body>
+</html>
