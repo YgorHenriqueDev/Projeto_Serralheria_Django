@@ -1,13 +1,27 @@
+# Arquivo .gitignore para projetos Django
+
+# Ambiente Virtual
+venv/
+env/
+.env
+
+# Arquivos de Banco de Dados
+*.sqlite3
+db.sqlite3
+db.sqlite3-journal
+
+# Arquivos de Cache do Python
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-db.sqlite3
-.env
+
+# Arquivos de Mídia e Estáticos coletados
+/media/
+/static_root/
+/staticfiles/
+
+# Arquivos de Configuração de IDE
+.vscode/
+.idea/
+
+# Logs
 *.log
-*.pot
-*.py[cod]
-media/
-staticfiles/
-node_modules/
-venv/
