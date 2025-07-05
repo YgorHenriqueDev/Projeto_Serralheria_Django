@@ -1,122 +1,43 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    {% load static %}
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editar Cliente - Serralheria Ferraço</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'styles.css' %}">
-</head>
-<body>
+{% extends 'base.html' %}
 
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="#">Serralheria Ferraço</a>
-            <div class="d-flex">
-                <span class="navbar-text me-3">Bem vindo, <strong>{{ request.user.first_name }}</strong></span>
-                <a href="{% url 'clientes:logout' %}" class="btn btn-danger">Sair</a>
+{% block title %}Editar Cliente{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h3><i class="bi bi-pencil-square"></i> Editar Cliente: {{ cliente.nome }}</h3>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                <p class="mb-0">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% for error in field.errors %}
+                                <div class="text-danger mt-1"><small>{{ error }}</small></div>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+
+                    <div class="mt-4 pt-3 border-top text-end">
+                        <a href="{% url 'clientes:listar_clientes' %}" class="btn btn-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                    </div>
+                </form>
             </div>
         </div>
-    </nav>
-
-    <!-- Container principal -->
-    <div class="container mt-5">
-        <h2 class="text-center mb-4">Editar Cliente</h2>
-
-        <!-- Mensagens de sucesso/erro diretamente na página -->
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-danger{% endif %} alert-dismissible fade show text-center" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
-
-        <!-- Script para redirecionar após sucesso -->
-        <script>
-            document.addEventListener("DOMContentLoaded", function () {
-                let successMessage = document.querySelector(".alert-success");
-                if (successMessage) {
-                    setTimeout(function () {
-                        window.location.href = "{% url 'clientes:listar_clientes' %}";
-                    }, 2000); // Redireciona em 2 segundos
-                }
-            });
-        </script>
-
-        <div class="card p-4">
-            <form method="POST">
-                {% csrf_token %}
-                
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label for="id_nome" class="form-label">Nome</label>
-                        <input type="text" class="form-control {% if form.nome.errors %}is-invalid{% endif %}" 
-                               id="id_nome" name="nome" value="{{ form.nome.value }}" required>
-                        <div class="invalid-feedback">
-                            {{ form.nome.errors.0 }}
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="id_cpf_cnpj" class="form-label">CPF/CNPJ</label>
-                        <input type="text" class="form-control {% if form.cpf_cnpj.errors %}is-invalid{% endif %}" 
-                               id="id_cpf_cnpj" name="cpf_cnpj" value="{{ form.cpf_cnpj.value }}" required>
-                        <div class="invalid-feedback">
-                            {{ form.cpf_cnpj.errors.0 }}
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label for="id_endereco" class="form-label">Endereço</label>
-                        <input type="text" class="form-control {% if form.endereco.errors %}is-invalid{% endif %}" 
-                               id="id_endereco" name="endereco" value="{{ form.endereco.value }}" required>
-                        <div class="invalid-feedback">
-                            {{ form.endereco.errors.0 }}
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="id_telefone" class="form-label">Telefone</label>
-                        <input type="text" class="form-control {% if form.telefone.errors %}is-invalid{% endif %}" 
-                               id="id_telefone" name="telefone" value="{{ form.telefone.value }}">
-                        <div class="invalid-feedback">
-                            {{ form.telefone.errors.0 }}
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label for="id_celular" class="form-label">Celular</label>
-                        <input type="text" class="form-control {% if form.celular.errors %}is-invalid{% endif %}" 
-                               id="id_celular" name="celular" value="{{ form.celular.value }}" required>
-                        <div class="invalid-feedback">
-                            {{ form.celular.errors.0 }}
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="id_email" class="form-label">Email</label>
-                        <input type="email" class="form-control {% if form.email.errors %}is-invalid{% endif %}" 
-                               id="id_email" name="email" value="{{ form.email.value }}" required>
-                        <div class="invalid-feedback">
-                            {{ form.email.errors.0 }}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Botões de ação -->
-                <div class="text-center">
-                    <button type="submit" class="btn btn-success">Salvar Alterações</button>
-                    <a href="{% url 'clientes:listar_clientes' %}" class="btn btn-secondary">Cancelar</a>
-                </div>
-            </form>
-        </div>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+</div>
+{% endblock %}

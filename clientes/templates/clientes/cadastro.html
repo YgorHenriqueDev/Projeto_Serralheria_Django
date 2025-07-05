@@ -11,26 +11,21 @@
     
     <style>
         body { background-color: #f8f9fa; }
+        .password-strength-progress { height: 6px; }
+        .password-rules { list-style: none; padding: 0; margin: 10px 0 0 0; font-size: 0.85rem; color: #6c757d; }
+        .password-rules li.valid { color: #198754; text-decoration: line-through; }
+        .password-rules li.invalid { color: #dc3545; }
     </style>
 </head>
 <body>
 
 <main class="container mt-4 mb-5">
-    <div class="row justify-content-center" style="margin-top: 10vh;">
+    <div class="row justify-content-center" style="margin-top: 5vh;">
         <div class="col-md-6">
             <div class="card shadow-lg">
                 <div class="card-body p-5">
-                    <h2 class="card-title text-center mb-4">Crie sua Conta</h2>
-
-                    {% if messages %}
-                        {% for message in messages %}
-                            <div class="alert {{ message.tags }} alert-dismissible fade show" role="alert">
-                                {{ message|safe }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-
+                    <h2 class="card-title text-center mb-4">Cadastro de Colaborador</h2>
+                    
                     <form method="POST" action="{% url 'clientes:cadastro' %}" autocomplete="off">
                         {% csrf_token %}
 
@@ -41,28 +36,125 @@
                                 {% endfor %}
                             </div>
                         {% endif %}
-                        
+
                         {% for field in form %}
                             <div class="mb-3">
                                 <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                                {{ field }}
                                 
+                                <div class="input-group">
+                                    {{ field }}
+                                    {% if field.name == 'senha' or field.name == 'confirmar_senha' %}
+                                    <button class="btn btn-outline-secondary" type="button" id="toggle-{{ field.name }}">
+                                        <i class="bi bi-eye" id="icon-{{ field.name }}"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+
                                 {% for error in field.errors %}
                                     <div class="text-danger mt-1"><small>{{ error }}</small></div>
                                 {% endfor %}
-                            </div>
+
+                                {% if field.name == 'senha' %}
+                                    <div class="progress mt-2 password-strength-progress">
+                                        <div id="password-strength-bar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                    <small id="password-strength-text" class="form-text"></small>
+                                    
+                                    <ul class="password-rules">
+                                        <li id="rule-length">Pelo menos 8 caracteres</li>
+                                        <li id="rule-uppercase">Pelo menos 1 letra maiúscula (A-Z)</li>
+                                        <li id="rule-lowercase">Pelo menos 1 letra minúscula (a-z)</li>
+                                        <li id="rule-number">Pelo menos 1 número (0-9)</li>
+                                        <li id="rule-special">Pelo menos 1 caractere especial (!@#$...)</li>
+                                    </ul>
+                                {% endif %}
+                                </div>
                         {% endfor %}
                         
-                        <div class="d-grid mt-4">
-                            <button type="submit" class="btn btn-primary btn-lg">Cadastrar</button>
+                        <div class="mt-4 pt-3 border-top text-center">
+                            <a href="{% url 'clientes:home' %}" class="btn btn-secondary">Cancelar</a>
+                            <button type="submit" class="btn btn-primary">Cadastrar Colaborador</button>
                         </div>
                         
-                        <div class="text-center mt-3">
-                            <a href="{% url 'clientes:login' %}">Já tem uma conta? Faça Login</a>
-                        </div>
                     </form>
-                </div> </div> </div> </div> </main>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // --- Lógica para mostrar/esconder senha ---
+    function setupPasswordToggle(toggleButtonId, passwordInputId, iconId) {
+        const toggleButton = document.getElementById(toggleButtonId);
+        const passwordInput = document.getElementById(passwordInputId);
+        const icon = document.getElementById(iconId);
+        if (toggleButton && passwordInput) {
+            toggleButton.addEventListener('click', () => {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                if (icon) {
+                    icon.classList.toggle('bi-eye');
+                    icon.classList.toggle('bi-eye-slash');
+                }
+            });
+        }
+    }
+    setupPasswordToggle('toggle-senha', 'id_senha', 'icon-senha');
+    setupPasswordToggle('toggle-confirmar_senha', 'id_confirmar_senha', 'icon-confirmar_senha');
+
+    // --- Lógica para a Barra de Força da Senha ---
+    const passwordInput = document.getElementById('id_senha');
+    if (passwordInput) {
+        const strengthBar = document.getElementById('password-strength-bar');
+        const strengthText = document.getElementById('password-strength-text');
+        const rules = {
+            'rule-length': (p) => p.length >= 8,
+            'rule-uppercase': (p) => /[A-Z]/.test(p),
+            'rule-lowercase': (p) => /[a-z]/.test(p),
+            'rule-number': (p) => /[0-9]/.test(p),
+            'rule-special': (p) => /[^A-Za-z0-9]/.test(p)
+        };
+
+        passwordInput.addEventListener('input', () => {
+            const password = passwordInput.value;
+            let score = 0;
+
+            for (const ruleId in rules) {
+                const ruleElement = document.getElementById(ruleId);
+                if (ruleElement) {
+                    if (rules[ruleId](password)) {
+                        score++;
+                        ruleElement.classList.add('valid');
+                        ruleElement.classList.remove('invalid');
+                    } else {
+                        ruleElement.classList.remove('valid');
+                        ruleElement.classList.add('invalid');
+                    }
+                }
+            }
+
+            const strengthLevels = {
+                0: { width: '0%', text: '', class: '' },
+                1: { width: '20%', text: 'Muito Fraca', class: 'bg-danger' },
+                2: { width: '40%', text: 'Fraca', class: 'bg-warning' },
+                3: { width: '60%', text: 'Média', class: 'bg-info' },
+                4: { width: '80%', text: 'Forte', class: 'bg-primary' },
+                5: { width: '100%', text: 'Muito Forte', class: 'bg-success' }
+            };
+            
+            if (strengthBar && strengthText) {
+                const level = strengthLevels[score];
+                strengthBar.style.width = level.width;
+                strengthBar.className = 'progress-bar';
+                if (level.class) strengthBar.classList.add(level.class);
+                strengthText.textContent = level.text;
+            }
+        });
+    }
+</script>
+
 </body>
 </html>

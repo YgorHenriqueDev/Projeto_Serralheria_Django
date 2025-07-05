@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Pedido #{{ pedido_id }}{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h3><i class="bi bi-pencil-square"></i> Editar Pedido #{{ pedido_id }}</h3>
+    </div>
+    <div class="card-body p-4">
+        <form method="POST">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+            <div class="alert alert-danger">
+                <strong>Por favor, corrija os erros abaixo:</strong>
+                {{ form.non_field_errors }}
+                <ul>
+                    {% for field, errors in form.errors.items %}
+                        {% if field != '__all__' %}
+                            <li>{{ field|title }}: {{ errors|striptags }}</li>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <h5 class="mb-3">Dados Gerais</h5>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.cliente.id_for_label }}" class="form-label">Cliente</label>
+                    {{ form.cliente }}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.data_pedido.id_for_label }}" class="form-label">Data do Pedido</label>
+                    {{ form.data_pedido }}
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="status_pedido" class="form-label">Status do Pedido</label>
+                <select name="status_pedido" id="status_pedido" class="form-select form-control-lg">
+                    <option value="Em Aberto" {% if status_atual == 'Em Aberto' %}selected{% endif %}>Em Aberto</option>
+                    <option value="Aguardando Pagamento" {% if status_atual == 'Aguardando Pagamento' %}selected{% endif %}>Aguardando Pagamento</option>
+                    <option value="Em Produção" {% if status_atual == 'Em Produção' %}selected{% endif %}>Em Produção</option>
+                    <option value="Concluído" {% if status_atual == 'Concluído' %}selected{% endif %}>Concluído</option>
+                    <option value="Entregue" {% if status_atual == 'Entregue' %}selected{% endif %}>Entregue</option>
+                    <option value="Cancelado" {% if status_atual == 'Cancelado' %}selected{% endif %}>Cancelado</option>
+                </select>
+            </div>
+
+            <hr class="my-4">
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5>Itens do Serviço</h5>
+                <button type="button" class="btn btn-success" id="add-item-btn"><i class="bi bi-plus-lg"></i> Adicionar Item</button>
+            </div>
+            
+            <div id="items-container">
+                {% for item in itens %}
+                <div class="p-3 mb-3 border rounded bg-white item-row">
+                    <div class="d-flex justify-content-end">
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-remover mb-2" title="Remover Item"><i class="bi bi-x-lg"></i></button>
+                    </div>
+                    <div class="row align-items-end">
+                        <div class="col-12 mb-2">
+                            <label class="form-label fw-bold">Descrição do Item</label>
+                            <textarea name="item_descricao" class="form-control" rows="2" required>{{ item.0 }}</textarea>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Custo Material</label>
+                            <div class="input-group"><span class="input-group-text">R$</span><input type="text" name="item_custo_material" class="form-control text-end item-calc item-material currency-input" value="{{ item.1|floatformat:2 }}"></div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Mão de Obra</label>
+                            <div class="input-group"><span class="input-group-text">R$</span><input type="text" name="item_mao_de_obra" class="form-control text-end item-calc item-mao-de-obra currency-input" value="{{ item.3|floatformat:2 }}"></div>
+                        </div>
+                         <div class="col-md-2">
+                            <label class="form-label">Qtd.</label>
+                            <input type="number" name="item_quantidade" class="form-control text-center item-calc item-quantidade" value="{{ item.2 }}" min="1" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Subtotal</label>
+                            <div class="input-group"><span class="input-group-text">R$</span><input type="text" class="form-control text-end fw-bold item-subtotal" value="0,00" readonly></div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="p-3 mb-3 border rounded bg-white item-row">
+                    <div class="d-flex justify-content-end"><button type="button" class="btn btn-sm btn-outline-danger btn-remover mb-2" title="Remover Item"><i class="bi bi-x-lg"></i></button></div>
+                    <div class="row align-items-end">
+                        <div class="col-12 mb-2"><label class="form-label fw-bold">Descrição do Item</label><textarea name="item_descricao" class="form-control" rows="2" required></textarea></div>
+                        <div class="col-md-3"><label class="form-label">Custo Material</label><div class="input-group"><span class="input-group-text">R$</span><input type="text" name="item_custo_material" class="form-control text-end item-calc item-material currency-input" value="0,00"></div></div>
+                        <div class="col-md-3"><label class="form-label">Mão de Obra</label><div class="input-group"><span class="input-group-text">R$</span><input type="text" name="item_mao_de_obra" class="form-control text-end item-calc item-mao-de-obra currency-input" value="0,00"></div></div>
+                        <div class="col-md-2"><label class="form-label">Qtd.</label><input type="number" name="item_quantidade" class="form-control text-center item-calc item-quantidade" value="1" min="1" required></div>
+                        <div class="col-md-3"><label class="form-label">Subtotal</label><div class="input-group"><span class="input-group-text">R$</span><input type="text" class="form-control text-end fw-bold item-subtotal" value="0,00" readonly></div></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <hr class="my-4">
+            <div class="row justify-content-end">
+                <div class="col-md-5">
+                    <h5 class="mb-3">Resumo do Pedido</h5>
+                    <ul class="list-group">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">Total Materiais<span id="grand-total-material">R$ 0,00</span></li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">Total Mão de Obra<span id="grand-total-mao-de-obra">R$ 0,00</span></li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center fs-5 fw-bold bg-light">VALOR TOTAL DO PEDIDO<span id="grand-total-pedido">R$ 0,00</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mt-5 pt-3 border-top text-end">
+                <a href="{% url 'clientes:detalhes_pedido' pedido_id %}" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary btn-lg">Salvar Alterações</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% endblock %}

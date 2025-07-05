@@ -1,66 +1,81 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    {% load static %}
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visualizar Cliente - Serralheria Ferraço</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'styles.css' %}">
-</head>
-<body>
+{% extends 'base.html' %}
 
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="#">Serralheria Ferraço</a>
-            <div class="d-flex">
-                <span class="navbar-text me-3">Bem vindo, <strong>{{ request.user.first_name }}</strong></span>
-                <a href="{% url 'clientes:logout' %}" class="btn btn-danger">Sair</a>
-            </div>
-        </div>
-    </nav>
+{% block title %}Detalhes de {{ cliente.nome }}{% endblock %}
 
-    <!-- Container principal -->
-    <div class="container mt-5">
-        <h2 class="text-center mb-4">Detalhes do Cliente</h2>
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0"><i class="bi bi-person-badge"></i> Detalhes do Cliente</h2>
+    <div>
+        <a href="{% url 'clientes:listar_clientes' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar para a Lista
+        </a>
+        <a href="{% url 'clientes:editar_cliente' cliente.id_cliente %}" class="btn btn-warning">
+            <i class="bi bi-pencil"></i> Editar Cliente
+        </a>
+    </div>
+</div>
 
-        <div class="card p-4">
-            <div class="mb-3">
-                <strong>Nome:</strong>
-                <p>{{ cliente.nome }}</p>
-            </div>
-            <div class="mb-3">
-                <strong>CPF/CNPJ:</strong>
-                <p>{{ cliente.cpf_cnpj }}</p>
-            </div>
-            <div class="mb-3">
-                <strong>Endereço:</strong>
-                <p>{{ cliente.endereco }}</p>
-            </div>
-            <div class="mb-3">
-                <strong>Telefone:</strong>
-                <p>{{ cliente.telefone }}</p>
-            </div>
-            <div class="mb-3">
-                <strong>Celular:</strong>
-                <p>{{ cliente.celular }}</p>
-            </div>
-            <div class="mb-3">
-                <strong>Email:</strong>
-                <p>{{ cliente.email }}</p>
-            </div>
+<div class="card shadow-sm mb-4">
+    <div class="card-header">
+        <h4>{{ cliente.nome }}</h4>
+    </div>
+    <div class="card-body p-4">
+        <dl class="row">
+            <dt class="col-sm-3">CPF/CNPJ:</dt>
+            <dd class="col-sm-9">{{ cliente.cpf_cnpj }}</dd>
 
-            <!-- Botões de ação -->
-            <div class="text-center">
-                <a href="{% url 'clientes:listar_clientes' %}" class="btn btn-secondary">Voltar</a>
-                <a href="{% url 'clientes:editar_cliente' cliente.id_cliente %}" class="btn btn-warning">Editar</a>
+            <dt class="col-sm-3">Endereço:</dt>
+            <dd class="col-sm-9">{{ cliente.endereco|default:"Não informado" }}</dd>
+        </dl>
+        <hr>
+        <dl class="row">
+            <dt class="col-sm-3">E-mail:</dt>
+            <dd class="col-sm-9">{{ cliente.email }}</dd>
+            
+            <dt class="col-sm-3">Celular:</dt>
+            <dd class="col-sm-9">{{ cliente.celular }}</dd>
 
+            <dt class="col-sm-3">Telefone Fixo:</dt>
+            <dd class="col-sm-9">{{ cliente.telefone|default:"Não informado" }}</dd>
+        </dl>
+    </div>
+</div>
 
-
-            </div>
+<div class="card shadow-sm mt-4">
+    <div class="card-header">
+        <h5><i class="bi bi-receipt"></i> Histórico de Pedidos</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Pedido #</th>
+                        <th>Data</th>
+                        <th>Status</th>
+                        <th class="text-end">Valor</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pedido in pedidos %}
+                    <tr>
+                        <td>{{ pedido.id_pedido }}</td>
+                        <td>{{ pedido.data_pedido|date:"d/m/Y" }}</td>
+                        <td><span class="badge bg-success">{{ pedido.status }}</span></td>
+                        <td class="text-end">R$ {{ pedido.valor_total }}</td>
+                        <td class="text-end">
+                            <a href="#" class="btn btn-sm btn-outline-primary">Ver Pedido</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted p-4">Nenhum pedido encontrado para este cliente.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
-
-</body>
-</html>
+</div>
+{% endblock %}

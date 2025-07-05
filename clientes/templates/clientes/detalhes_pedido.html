@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalhes do Pedido #{{ pedido.id_pedido }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3><i class="bi bi-receipt-cutoff"></i> Detalhes do Pedido #{{ pedido.id_pedido }}</h3>
+    <div>
+        <a href="{% url 'clientes:editar_pedido' pedido.id_pedido %}" class="btn btn-warning"><i class="bi bi-pencil"></i> Editar Pedido</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-7">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header"><i class="bi bi-info-circle-fill"></i> Informações Gerais</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Cliente:</dt>
+                    <dd class="col-sm-8">{{ pedido.nome_cliente }}</dd>
+
+                    <dt class="col-sm-4">Data do Pedido:</dt>
+                    <dd class="col-sm-8">{{ pedido.data_pedido|date:"d/m/Y" }}</dd>
+
+                    <dt class="col-sm-4">Prazo de Entrega:</dt>
+                    <dd class="col-sm-8">{{ pedido.prazo_entrega|date:"d/m/Y"|default:"Não definido" }}</dd>
+
+                    <dt class="col-sm-4 pt-2">Status Atual:</dt>
+                    <dd class="col-sm-8">
+                        <form action="{% url 'clientes:atualizar_status_pedido' pedido.id_pedido %}" method="POST" class="d-flex align-items-center">
+                            {% csrf_token %}
+                            <select name="novo_status" class="form-select w-auto me-2">
+                                <option value="Em Aberto" {% if pedido.status == 'Em Aberto' %}selected{% endif %}>Em Aberto</option>
+                                <option value="Aguardando Pagamento" {% if pedido.status == 'Aguardando Pagamento' %}selected{% endif %}>Aguardando Pagamento</option>
+                                <option value="Em Produção" {% if pedido.status == 'Em Produção' %}selected{% endif %}>Em Produção</option>
+                                <option value="Concluído" {% if pedido.status == 'Concluído' %}selected{% endif %}>Concluído</option>
+                                <option value="Entregue" {% if pedido.status == 'Entregue' %}selected{% endif %}>Entregue</option>
+                                <option value="Cancelado" {% if pedido.status == 'Cancelado' %}selected{% endif %}>Cancelado</option>
+                            </select>
+                            <button type="submit" class="btn btn-sm btn-primary">Atualizar</button>
+                        </form>
+                    </dd>
+                    
+                    {% if pedido.observacao %}
+                    <dt class="col-sm-4">Observação:</dt>
+                    <dd class="col-sm-8">{{ pedido.observacao }}</dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header"><i class="bi bi-box-seam"></i> Itens do Pedido</div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Produto/Serviço</th>
+                                <th class="text-center">Qtd</th>
+                                <th class="text-end">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in itens %}
+                            <tr>
+                                <td>{{ item.0 }}</td>
+                                <td class="text-center">{{ item.1 }}</td>
+                                <td class="text-end">R$ {{ item.2|floatformat:2 }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="3" class="text-center p-3 text-muted">Nenhum item encontrado para este pedido.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header"><i class="bi bi-currency-dollar"></i> Resumo Financeiro</div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between">Valor Total: <span>R$ {{ pedido.valor_total|floatformat:2 }}</span></li>
+                    <li class="list-group-item d-flex justify-content-between">Total Pago: <span class="text-success fw-bold">R$ {{ pedido.total_pago|floatformat:2 }}</span></li>
+                    <li class="list-group-item d-flex justify-content-between"><strong>Saldo Restante:</strong> <strong class="text-danger">R$ {{ pedido.valor_restante|floatformat:2 }}</strong></li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card shadow-sm">
+            <div class="card-header"><i class="bi bi-cash-coin"></i> Histórico de Pagamentos</div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <thead><tr><th>Data</th><th>Observação/Tipo</th><th class="text-end">Valor</th></tr></thead>
+                    <tbody>
+                        {% for pagamento in pagamentos %}
+                        <tr>
+                            <td>{{ pagamento.0|date:"d/m/Y" }}</td>
+                            <td>{{ pagamento.1 }}</td>
+                            <td class="text-end">R$ {{ pagamento.2|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="text-center p-3 text-muted">Nenhum pagamento registado.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <hr>
+                <h6><i class="bi bi-plus-circle"></i> Registar Novo Pagamento</h6>
+                <form method="POST" action="{% url 'clientes:registrar_pagamento' pedido.id_pedido %}">
+                    {% csrf_token %}
+                    <div class="mb-2">
+                        <label class="form-label small">Data</label>
+                        <input type="date" name="data_pagamento" class="form-control form-control-sm" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small">Observação/Tipo</label>
+                        <input type="text" name="tipo_pagamento" class="form-control form-control-sm" placeholder="Ex: Entrada, PIX, etc.">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small">Valor Pago</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">R$</span>
+                            <input type="text" name="valor_pago" class="form-control form-control-sm" placeholder="0,00" required>
+                        </div>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success btn-sm mt-2">Adicionar Pagamento</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,9 +1,9 @@
 from django import forms
 from validate_docbr import CPF, CNPJ
+import re
 
 class ClienteForm(forms.Form):
-    # Para cada campo, adicionamos o 'widget' para definir os atributos HTML
-    
+    # Seus campos estão perfeitamente definidos, nenhuma alteração necessária aqui.
     nome = forms.CharField(
         label="Nome", 
         max_length=150, 
@@ -15,7 +15,7 @@ class ClienteForm(forms.Form):
     )
     cpf_cnpj = forms.CharField(
         label="CPF/CNPJ", 
-        max_length=18,  # Aumentado para acomodar máscaras (ex: xx.xxx.xxx/xxxx-xx)
+        max_length=18,
         required=True,
         widget=forms.TextInput(attrs={
             'class': 'form-control form-control-lg',
@@ -34,7 +34,7 @@ class ClienteForm(forms.Form):
     telefone = forms.CharField(
         label="Telefone", 
         max_length=20, 
-        required=False, # Não obrigatório
+        required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control form-control-lg',
             'placeholder': '(Opcional)'
@@ -53,47 +53,83 @@ class ClienteForm(forms.Form):
         label="E-mail", 
         max_length=150, 
         required=True,
-        widget=forms.EmailInput(attrs={ # Usando EmailInput para validação de email no HTML5
+        widget=forms.EmailInput(attrs={
             'class': 'form-control form-control-lg',
             'placeholder': 'email@exemplo.com'
         })
     )
     
-    # Sua função de validação continua perfeita, sem alterações necessárias.
+    # --- MÉTODO DE VALIDAÇÃO AJUSTADO ---
     def clean_cpf_cnpj(self):
-        cpf_cnpj = self.cleaned_data['cpf_cnpj'].replace('.', '').replace('-', '').replace('/', '')
+        cpf_cnpj = self.cleaned_data.get('cpf_cnpj')
 
-        if not cpf_cnpj.isdigit():
-            raise forms.ValidationError("O CPF ou CNPJ deve conter apenas números.")
+        # 1. Limpeza de dados mais eficiente: remove QUALQUER caractere que não seja um dígito.
+        numeros = "".join(filter(str.isdigit, cpf_cnpj))
 
-        if len(cpf_cnpj) == 11:
-            if not CPF().validate(cpf_cnpj):
-                raise forms.ValidationError("CPF inválido.")
-        elif len(cpf_cnpj) == 14:
-            if not CNPJ().validate(cpf_cnpj):
-                raise forms.ValidationError("CNPJ inválido.")
+        # Valida o tamanho e o tipo (CPF ou CNPJ)
+        if len(numeros) == 11:
+            if not CPF().validate(numeros):
+                raise forms.ValidationError("O número de CPF informado é inválido.")
+        elif len(numeros) == 14:
+            if not CNPJ().validate(numeros):
+                raise forms.ValidationError("O número de CNPJ informado é inválido.")
         else:
-            raise forms.ValidationError("O tamanho do CPF ou CNPJ informado é inválido.")
+            raise forms.ValidationError("O CPF/CNPJ deve conter 11 ou 14 dígitos.")
 
-        return self.cleaned_data['cpf_cnpj'] # Retorna o valor original com máscara, se houver
+        # 2. MUDANÇA MAIS IMPORTANTE: Retorna a versão limpa (apenas números).
+        return numeros
 
 
+# --- VERSÃO ATUALIZADA DO SEU FORMULÁRIO DE USUÁRIO ---
 class UsuarioForm(forms.Form):
-    nome = forms.CharField(label="Nome Completo", required=True)
-    cpf = forms.CharField(label="CPF", required=True)
-    email = forms.EmailField(label="E-mail", required=True)
-    senha = forms.CharField(label="Senha", required=True, widget=forms.PasswordInput)
-    confirmar_senha = forms.CharField(label="Confirme a Senha", required=True, widget=forms.PasswordInput)
+    nome = forms.CharField(
+        label="Nome Completo", 
+        required=True,
+        widget=forms.TextInput(attrs={'class': 'form-control form-control-lg', 'placeholder': 'Seu nome completo', 'autocomplete': 'off'})
+    )
+    cpf = forms.CharField(
+        label="CPF", 
+        required=True,
+        widget=forms.TextInput(attrs={'class': 'form-control form-control-lg', 'placeholder': 'Digite seu CPF', 'autocomplete': 'off'})
+    )
+    email = forms.EmailField(
+        label="E-mail", 
+        required=True,
+        widget=forms.EmailInput(attrs={'class': 'form-control form-control-lg', 'placeholder': 'seu.email@exemplo.com', 'autocomplete': 'off'})
+    )
+    senha = forms.CharField(
+        label="Senha", 
+        required=True,
+        widget=forms.PasswordInput(attrs={'class': 'form-control form-control-lg', 'placeholder': 'Crie uma senha forte', 'autocomplete': 'new-password'})
+    )
+    confirmar_senha = forms.CharField(
+        label="Confirme a Senha", 
+        required=True,
+        widget=forms.PasswordInput(attrs={'class': 'form-control form-control-lg', 'placeholder': 'Repita a senha', 'autocomplete': 'new-password'})
+    )
 
-    def clean_cpf(self):
-        cpf = self.cleaned_data.get('cpf')
-        if cpf:
-            cpf_numeros = "".join(filter(str.isdigit, cpf))
-            if not CPF().validate(cpf_numeros):
-                raise forms.ValidationError("Este número de CPF é inválido.")
-            return cpf_numeros
-        return cpf
+    # 2. MÉTODO ADICIONADO PARA VALIDAR A FORÇA DA SENHA
+    def clean_senha(self):
+        senha = self.cleaned_data.get('senha')
+        errors = []
+        if len(senha) < 8:
+            errors.append("A senha deve conter pelo menos 8 caracteres.")
+        if not re.search(r'[A-Z]', senha):
+            errors.append("A senha deve conter pelo menos uma letra maiúscula.")
+        if not re.search(r'[a-z]', senha):
+            errors.append("A senha deve conter pelo menos uma letra minúscula.")
+        if not re.search(r'[0-9]', senha):
+            errors.append("A senha deve conter pelo menos um número.")
+        if not re.search(r'[^A-Za-z0-9]', senha): # Verifica se há um caractere que NÃO é letra ou número
+            errors.append("A senha deve conter pelo menos um caractere especial (!@#$...).")
 
+        if errors:
+            # Se houver erros, lança uma única ValidationError com a lista de todos os problemas
+            raise forms.ValidationError(errors)
+        
+        return senha
+
+    # Validação de senhas (verifica se são iguais)
     def clean(self):
         cleaned_data = super().clean()
         senha = cleaned_data.get("senha")
@@ -101,3 +137,56 @@ class UsuarioForm(forms.Form):
         if senha and confirmar_senha and senha != confirmar_senha:
             raise forms.ValidationError("As senhas digitadas não conferem.")
         return cleaned_data
+
+    # Validação de CPF
+    def clean_cpf(self):
+        cpf = self.cleaned_data.get('cpf')
+        if cpf:
+            cpf_numeros = "".join(filter(str.isdigit, cpf))
+            if len(cpf_numeros) != 11:
+                raise forms.ValidationError("O CPF deve conter 11 dígitos.")
+            if not CPF().validate(cpf_numeros):
+                raise forms.ValidationError("Este número de CPF é inválido.")
+            return cpf_numeros
+        return cpf
+
+        
+class PedidoForm(forms.Form):
+    """
+    Formulário para os dados gerais de um pedido (criação e edição),
+    incluindo a lógica para popular o dropdown de clientes dinamicamente.
+    """
+    cliente = forms.ChoiceField(
+        label="Cliente", 
+        required=True,
+        widget=forms.Select(attrs={'class': 'form-select form-control-lg'})
+    )
+    data_pedido = forms.DateField(
+        label="Data do Pedido", 
+        required=True,
+        widget=forms.DateInput(attrs={'class': 'form-control form-control-lg', 'type': 'date'})
+    )
+    prazo_entrega = forms.DateField(
+        label="Prazo de Entrega",
+        required=False, # Este campo não é obrigatório
+        widget=forms.DateInput(attrs={'class': 'form-control form-control-lg', 'type': 'date'})
+    )
+    observacao = forms.CharField(
+        label="Observação",
+        required=False, # Este campo também não é obrigatório
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Detalhes do pedido, medidas, etc.'})
+    )
+
+    def __init__(self, *args, **kwargs):
+        """
+        Construtor customizado para aceitar uma lista de clientes da view
+        e usá-la para preencher as opções do campo 'cliente'.
+        """
+        # "Apanha" o argumento 'clientes' que a view enviou
+        clientes_choices = kwargs.pop('clientes', [])
+        
+        # Chama o construtor original da classe pai
+        super(PedidoForm, self).__init__(*args, **kwargs)
+        
+        # Usa a lista de clientes para definir as opções (choices) do dropdown
+        self.fields['cliente'].choices = [('', 'Selecione um cliente...')] + clientes_choices
